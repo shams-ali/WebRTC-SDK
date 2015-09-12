@@ -1,18 +1,38 @@
-﻿<!DOCTYPE html>
+
+<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
     <title></title>
-    <script src="https://code.oovoo.com/webrtc/oovoosdk-0.0.7.min.js"></script>
+    <script src="https://code.oovoo.com/webrtc/oovoosdk-2.0.0.min.js"></script>
     <script type="text/javascript">
         var conference = null;
-        var conferenceId = "Please insert your Conference ID";
+        var conferenceId = "OOVOO_WEB_RTC";
+        var appToken = "PUT HERE APPLICATION TOKEN";
+        var sessionToken = getQSParam("t");
+        var participantId = getQSParam("pid");
 
-        ooVoo.API.init({ 
-            appId: "Please insert your APP ID",
-            appToken: "Please insert your APP Token" }, 
-            onAPI_init);
+        if (!sessionToken) {
+            //login to get session token
+            participantId = "participant uniqe id";
+            //for example (get random id)
+            participantId = Math.floor(Math.random() * 9999999999) + 1000000000;
+
+            var redirectUrl = "url to send response with the session token"
+            redirectUrl = location.href + "?pid=" + participantId;
+            ooVoo.API.connect({
+                token: appToken,
+                isSandbox: true,
+                userId: participantId,
+                callbackUrl: redirectUrl
+            });
+        }
+        else {
+            ooVoo.API.init({
+                userToken: sessionToken
+            }, onAPI_init);
+        }
 
         function onAPI_init(res) {
             conference = ooVoo.API.Conference.init({ video: true, audio: true }, onConference_init);
@@ -31,10 +51,7 @@
                     videoFrameRate: new Array(5, 15)
                 }, function (res) {
                     if (!res.error) {
-						var participantId = "participant uniqe id";
-						//for example (get random id)
-						participantId = Math.floor(Math.random() * 9999999999) + 1000000000;
-                        conference.join(conferenceId, participantId, "participant name", function (result) { });
+                        conference.join(conferenceId, participantId, sessionToken, "participant name", function (result) { });
                     }
                 });
             }
@@ -58,13 +75,20 @@
                 document.body.appendChild(videoElement);
             }
         }
-		function onConferenceStateChanged(evt){
-		}
-		function onRemoteVideoStateChanged(evt){
-		}
-    </script>  
+        function onConferenceStateChanged(evt) {
+        }
+        function onRemoteVideoStateChanged(evt) {
+        }
+
+        function getQSParam(name) {
+            name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+            var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                results = regex.exec(location.search);
+            return results === null ? "" : results[1].replace(/\+/g, " ");
+        }
+    </script>
 </head>
 <body>
-    <video id="localVideo" style="width:50%; height:auto;" autoplay muted ></video>
+    <video id="localVideo" style="width:50%; height:auto;" autoplay muted></video>
 </body>
 </html>
